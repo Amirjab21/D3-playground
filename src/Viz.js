@@ -6,239 +6,144 @@ import PropTypes from 'prop-types';
 
 export default class SankeyComp extends React.Component {
 
-  formatData() {
-    const data = { nodes: [{ name: 'refactor' }, { name: 'rehost' }, { name: 'repurchase' }, { name: 4 }, { name: '5' }], links: [] };
-    this.props.data.forEach((app) => {
-      data.nodes.push(
-        {
-          serverCount: app.serverCount, name: app.name,
-        },
-      );
-      if (app.recommendations.length > 0) {
-        app.recommendations.forEach((rec) => {
-          if (rec.recommendation === 4) {
-            data.links.push({ source: app.name, target: rec.category.toString(), value: app.serverCount + 1, recommend: 1 });
-          }
-          if (rec.recommendation === 3) {
-            data.links.push({ source: app.name, target: rec.category.toString(), value: app.serverCount + 1, recommend: 0 });
-          }
-        });
-      }
-    });
-  }
+
 
   DrawD3(width, height) {
 
-    if (this.props.data) {
-      const dataReal = { nodes: [{ name: 'refactor' }, { name: 'rehost' }, { name: 'repurchase' }, { name: 'retain' }, { name: 'rearchitect' }, { serverCount: 0, name: 'AB Initio Browser',category: 1 }, { name: 'AccessTest1',category: 1 }, { name: 'ACIWEB',category: 1 }, { name: 'Acorn Web',category: 1 }, { name: 'adada',category: 1 }, { name: 'AIM',category: 1 }, { name: 'AIM v2',category: 1 }, { name: 'AlarmPoint',category: 1 }, { name: 'Amex',category: 1 }, { name: 'Amirs-due-to-expire-app',category: 1 }, { name: 'Anacorp',category: 1 }, { name: 'App with no servers',category: 1 }, { name: 'Apply Portal', category: 1 }],
-        links: [{ source: 'ACIWEB', target: 'refactor', value: 1, recommend: 1,category: 1 }, { source: 'adada', target: 'rearchitect', value: 1, recommend: 1 }, { source: 'AIM v2', target: 'rearchitect', value: 2, recommend: 1 }, { source: 'AccessTest1', target: 'rearchitect', value: 2, recommend: 1 }, { source: 'AccessTest1', target: 'rehost', value: 2, recommend: 1 }, { source: 'adada', target: 'retain', value: 2, recommend: 1 }, { source: 'AIM', target: 'repurchase', value: 2, recommend: 1 }, { source: 'Amex', target: 'rehost', value: 2, recommend: 1 }, { source: 'Amirs-due-to-expire-app', target: 'rehost', value: 2, recommend: 1 }, { source: 'App with no servers', target: 'retain', value: 2, recommend: 1 }, { source: 'Anacorp', target: 'rehost', value: 2, recommend: 1 }, { source: 'Amex', target: 'repurchase', value: 2, recommend: 1 },
-          { source: 'Acorn Web', target: 'refactor', value: 2, recommend: 1 }, { source: 'AlarmPoint', target: 'rearchitect', value: 2, recommend: 1 }, { source: 'Apply Portal', target: 'repurchase', value: 2, recommend: 1 }, { source: 'AB Initio Browser', target: 'rehost', value: 2, recommend: 1 }, { source: 'adada', target: 'rehost', value: 2, recommend: 1 }] }
-      // formatData() do this to turn data from graphql query into data ready for Sankey
+    const dataCircles = [{R: 50, C: 75, name: 'app1', rec: 'retain', servers: 1 }, {R: 20, C: 45, name: 'app2', rec: 'rehost', servers: 4 }, {R: 30, C: 65, name: 'app3', rec: 'rearchitect', servers: 6 },
+    {R: 50, C: 15, name: 'app1', rec: 'repurchase', servers: 4 }, {R: 88, C: 45, name: 'Adobe', rec: 'rearchitect', servers: 10 }, {R: 90, C: 25, name: 'AMEX', rec: 'retain', servers: 12 },
+    {R: 50, C: 75, name: 'OSX', rec: 'retain', servers: 1 }, {R: 40, C: 85, name: 'MSX', rec: 'rehost', servers: 4 }, {R: 10, C: 65, name: 'app3', rec: 'rearchitect', servers: 9 },
+    {R: 50, C: 75, name: 'apple', rec: 'rehost', servers: 1 }, {R: 21, C: 45, name: 'confidential', rec: 'rehost', servers: 4 }, {R: 50, C: 65, name: 'AXIOS', rec: 'rearchitect', servers: 1 }];
+    const margin = {left: 10,  right: 10, top: 10, bottom: 10};
 
-      const names = dataReal.nodes.map(item => item.name);
-      const  appsonly = dataReal.nodes.filter(item => item.category && item.category === 1.).map(item => item.name)
-      console.log(appsonly,'apps')
-  function color(d) {
-    const colorx = d3.scaleOrdinal(schemeTableau10).domain(names)
-    return colorx(d.name ? d.name : d.source.name);
-  }  
-
-  function colorlinks(d) {
-    const colorx = d3.scaleOrdinal(schemeTableau10).domain(names)
-    return colorx(d.target.name)
-  }
-
-  function colorBlues(d) {
-    const colorx = d3.scaleOrdinal(["#007DB9", "rgb(54, 175, 78)", "#26AAE1", '#F3A32F']).domain(appsonly);
-    return colorx(d.name)
-  }
-
-      const Sankey = sankey()
-        .nodeWidth(30)
-        .nodePadding(10)
-        .nodeAlign(sankeyRight)
-        .size([width, height])
-        .nodeId(d => d.name)
-        .nodeSort(a => {})
-
-
-      const graph = Sankey(dataReal);
-      // eslint-disable-next-line react/no-string-refs
-      const svg = d3.select(this.refs.referee);
+    const svg = d3.select(this.refs.referee);
 
       const div = d3.select('body').append('div')
-        .attr('class', 'tooltip-donut')
+      .attr('class', 'tooltip-donut')
+      .style('opacity', 0)
+      .style('position', 'absolute')
+      .style('background-color', '#eaeaea');
+
+      svg.append('rect')
+      .attr('fill', "red")
+      .attr('opacity', 0.1)
+      .attr('x', 250)
+      .attr('width',250)
+      .attr('height',500)
+      // .attr('y', 250)
+
+      svg.append('rect')
+      .attr('fill', "green")
+      .attr('opacity', 0.1)
+      .attr('y', 0)
+      .attr('width',500)
+      .attr('height',250)
+      // .attr('y', 250)
+
+ var x = d3.scaleLinear()
+    .domain([0, 100])
+    .range([ 0, width ]);
+  svg.append("g")
+    .attr("transform", "translate(0," + height + ")")
+    .call(d3.axisBottom(x));
+  svg  
+  .append('text')
+  .attr('fill', 'red')
+  .style('fontWeight', 'bold')
+  .attr("text-anchor", "end")
+  .attr('font-size',30)
+  .attr("x", 500)
+  .attr("y", height + 50)
+  .text("Risk");
+
+  svg  
+  .append('text')
+  .attr('font-size',30)
+  .style('fill', 'green')
+  .style('fontWeight', 'bold')
+  .attr("text-anchor", "end")
+  .attr("x", -40)
+  .attr("y", 20)
+  .text("Complexity");
+
+  // Add Y axis
+  var y = d3.scaleLinear()
+    .domain([0, 100])
+    .range([ height, 0]);
+  svg.append("g")
+    .call(d3.axisLeft(y));
+
+  // Add a scale for bubble size
+  var z = d3.scaleLinear()
+    .domain([0, 20])
+    .range([ 5, 40]);
+
+  // Add a scale for bubble color
+  var myColor = d3.scaleOrdinal()
+    .domain(["retain", "rehost","refactor","repurchase","rearchitect"])
+    .range(schemeTableau10);
+
+  const sevenRs = dataCircles.map(item => item.rec)
+
+  function color(d) {
+    const colorx = d3.scaleOrdinal(schemeTableau10).domain(sevenRs)
+    return colorx(d.rec);
+  }  
+
+  svg.append('g')
+  .selectAll("dot")
+  .data(dataCircles)
+  .enter()
+  .append("circle")
+    .attr("cx", function (d) { return x(d.R); } )
+    .attr("cy", function (d) { return y(d.C); } )
+    .attr("r", function (d) { return z(d.servers); } )
+    .style("fill", function (d) { return color(d) } )
+    .style("opacity", "0.7")
+    .attr("stroke", "white")
+    .style("stroke-width", "2px")
+    .on('mouseover', onMouseOver )
+    .on('mouseleave', onMouseOut)
+
+    function onMouseOver(d, i) {
+    d3.select(this).transition()
+        .duration('50')
+        .style('opacity', '1');
+
+        div.transition()
+        .duration(200)
+        .style('display','flex')
+        .style('opacity', 1)
+        .style("left", (d3.event.pageX + 30) + "px")
+        .style("top", (d3.mouse(this)[1]+30) + "px")
+        .style('background-color', color(d))
+        div.html(() => {
+          console.log(d)
+          return `${d.name} <br /> option: ${d.rec} <br /> servers: ${d.servers}`
+        })
+  }
+  function onMouseOut(d, i) {
+    d3.select(this).transition()
+        .duration('50')
+        .style('opacity', '0.7');
+
+        div.transition()
+        .duration(200)
         .style('opacity', 0)
-        .style('position', 'absolute')
-        .style('background-color', '#eaeaea');
-
-    const path = sankeyLinkHorizontal();
-    // add in the nodes
-    svg.append('g')
-        .attr('stroke', '#000')
-      .selectAll('rect')
-      .data(graph.nodes)
-      .join('rect')
-        .attr('x', d => d.x0)
-        .attr('y', d => d.y0)
-        .attr('height', d => d.y1 - d.y0)
-        .attr('width', d => d.x1 - d.x0)
-        .attr('fill', (d, i) => d.category ? colorBlues(d) : color(d))
-      .append('title')
-        .text(d => `${d.name}\n`);
-
-    const link = svg.append('g')
-      .attr('fill', 'none')
-      .attr('stroke-opacity', 0.8)
-      .selectAll('g')
-      .data(graph.links)
-      .join('g')
-        .style('mix-blend-mode', 'multiply');
-
-    link.append('path')
-        .attr('d', path)
-        .attr('class', 'link')
-        // .attr('stroke', d => colorlinks(d))
-        .style('stroke', (d, i) => {
-
-    // make unique gradient ids  
-    const gradientID = `gradient${i}`;
-
-    const startColor = colorBlues(d.source);
-    const stopColor = color(d.target);
-
-    const linearGradient = link.append('linearGradient')
-        .attr('id', gradientID);
-
-    linearGradient.selectAll('stop') 
-      .data([                             
-          {offset: '10%', color: startColor },      
-          {offset: '90%', color: stopColor }    
-        ])                  
-      .enter().append('stop')
-      .attr('offset', d => {
-        return d.offset; 
-      })   
-      .attr('stop-color', d => {
-        return d.color;
-      });
-
-    return `url(#${gradientID})`;
-  })
-        .attr('stroke-width', d => 30)
-        
-
-    link.append('title')
-        .text(d => `${d.source.name} → ${d.target.name}\n`);
+        // .style('display','none')
+  }
 
 
-const gradient = link.append('linearGradient')
-        .attr('id', d => (d.index))
-        .attr('gradientUnits', 'userSpaceOnUse')
-        .attr('x1', d => d.source.x1)
-        .attr('x2', d => d.target.x0);
-
-    gradient.append('stop')
-        .attr('offset', '0%')
-        .attr('stop-color', d => color(d.source));
-     gradient.append('stop')
-        .attr('offset', '100%')
-        .attr('stop-color', d => color(d.target));
-
-        function highlightPaths(option, source) {
-          let paths = svg.selectAll('path')
-          .filter(d => {console.log(d); return source === true ? d.source.name === option : d.target.name === option})
-          .transition()
-          .duration(100)
-          .attr('stroke', 'red')
-
-          svg.selectAll('path').filter(d => source === true ? d.source.name !== option :  d.target.name !== option)
-          .transition()
-          .duration(100)
-          .attr('opacity', 0.01)
-        }
-
-        let apprects = d3.selectAll('rect')
-        .filter(d => ['AB Initio Browser', 'adada', 'ACIWEB', 'Acorn Web', 'AIM', 'Amex', 'Amirs-due-to-expire-app', 'AccessTest1', 'Appy Portal', 'Anacorp', 'AIM v2', 'AlarmPoint', 'App  with no servers', 'Apply Portal', 'App with no servers'].includes(d.name))
-        apprects.on('mouseover', function(d, i) {
-          highlightPaths(d.name, true)
-        })
-        .on('mouseout', function(d, i) {
-          svg.selectAll('path')
-        .attr('d', path)
-        .attr('stroke', d =>  colorlinks(d))
-        // .attr('stroke-width', d => Math.max(1, d.width))
-        .attr('opacity', 1)
-        })
-
-      let rects = d3.selectAll('rect')
-        .filter(d => ['refactor', 'rehost', 'repurchase', 'retain', 'rearchitect'].includes(d.name))
-          
-        rects.on('mouseover', function(d, i) {
-          highlightPaths(d.name)
-        })
-        .on('mouseout', function(d, i) {
-          svg.selectAll('path')
-        .attr('d', path)
-        .attr('stroke', d =>  colorlinks(d))
-        // .attr('stroke-width', d => Math.max(1, d.width))
-        .attr('opacity', 1)
-        })
-
-
-
-      // show value on mouse hover
-      d3.selectAll('path').on('mouseover', function (d, i) {
-
-                d3.select(this).transition()
-                    .duration('50')
-                    .attr('opacity', '.85');
-
-                  div.transition()
-                .duration(50)
-                .style('opacity', 1);
-                console.log(d)
-                div.html(`application ${d.source.name} has ${d.value} servers`)
-  
-      .style('left', (d3.event.pageX + 10) + 'px')
-      .style('top', (d3.event.pageY - 15) + 'px');
-      })
-      
-      .on('mouseout', function (d, i) {
-                d3.select(this).transition()
-                    .duration('50')
-                    .attr('opacity', '1');
-
-                  div.transition()
-                .duration('50')
-                .style('opacity', 0)
-      })
-
-    svg.append('g')
-        .attr('font-family', 'sans-serif')
-        .attr('font-size', 16)
-        .attr('font-weight', 'bold')
-        .attr('width', 50)
-        .attr('text-align', 'left')
-      .selectAll('text')
-      .data(graph.nodes)
-      .join('text')
-        .attr('x', d => d.x0 < width / 2 ? d.x1 - 50 : d.x0 + 50)
-        .style('width', 50)
-        .attr('y', d => (d.y1 + d.y0) / 2)
-        .attr('dy', '0.35em')
-        .attr('text-anchor', d => d.x0 < width / 2 ? 'end' : 'start')
-        .text(d => d.name);
-    }
 }
 
   componentDidMount() {
-    this.DrawD3(1000, 800)
+    this.DrawD3(500, 500);
   }
+
 
   render() {
     return (
-      <svg style={{ overflow: 'visible' }} width={1000} height={800} ref={'referee'} />
+      <svg style={{ overflow: 'visible', padding: 10 }} width={500} height={500} ref={'referee'} />
     );
   }
 }
